@@ -1,0 +1,9 @@
+# For project
+albumentations==1.0.2
+torch==1.9.0
+timm==0.4.12
+wandb==0.10.33
+tqdm==4.61.1
+pandas==1.2.5
+sklearn==0.0
+opencv-python==4.2.0.32ttach==0.0.3
