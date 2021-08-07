@@ -1,4 +1,4 @@
-# Segmentation of cargo x-ray images
+# Missed airplanes classification (https://cups.mail.ru/)
 
 ## Структура проекта
 
