@@ -1,5 +1,15 @@
 # Missed airplanes classification (https://cups.mail.ru/)
 
+## Установка пакета и зависимостей
+```bash
+  pip install -r requirements.txt
+  pip install -e .
+```
+## Запуск обучения
+```bash
+  python missed_planes/train.py config/config.json
+```
+
 ## Структура проекта
 
 ```bash
