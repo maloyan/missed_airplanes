@@ -1,17 +1,12 @@
 import json
-import os
 import sys
 
 import albumentations as A
-import numpy as np
 import pandas as pd
-import timm
 import torch
 import wandb
-from albumentations.augmentations.geometric.resize import Resize
-from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.model_selection import StratifiedKFold
 from torch.utils.data import DataLoader
-from tqdm import tqdm
 
 import missed_planes.engine as engine
 import missed_planes.metrics as metrics
@@ -64,12 +59,6 @@ test_loader = DataLoader(
     num_workers=config["num_workers"],
     drop_last=False,
 )
-# train_data, valid_data = train_test_split(
-#     train_data,
-#     train_size=config["train_test_split"],
-#     random_state=42,
-#     stratify=train_data["sign"],
-# )
 
 skf = StratifiedKFold(n_splits=config["folds"])
 
@@ -118,6 +107,9 @@ for fold_num, (train_index, test_index) in enumerate(skf.split(train, train["sig
     acc = [metrics.Accuracy()]
 
     optimizer = torch.optim.Adam([dict(params=model.parameters(), lr=config["lr"])])
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, factor=config["decay"], patience=2
+    )
 
     train_epoch = engine.TrainEpoch(
         model,
@@ -152,7 +144,6 @@ for fold_num, (train_index, test_index) in enumerate(skf.split(train, train["sig
             }
         )
 
-        optimizer.param_groups[0]["lr"] *= config["decay"]
         if min_loss > valid_logs[type(loss).__name__]:
             min_loss = valid_logs[type(loss).__name__]
             torch.save(
@@ -167,36 +158,4 @@ for fold_num, (train_index, test_index) in enumerate(skf.split(train, train["sig
         if patience == config["patience"]:
             break
 
-    model.eval()
-    with torch.no_grad():
-        result = []
-        for i in test_loader:
-            i = i.to(config["device"])
-
-            output = model(i)
-            output = output.view(-1).detach().cpu().numpy()
-
-            result.extend(output)
-
-    result = np.array(result).reshape(-1)
-
-    submission = pd.read_csv("data/sample_submission.csv")
-    print((result > 0.5).sum())
-    submission["sign"] = result
-
-    submission.to_csv(
-        os.path.join(config["submission"], config["model"])
-        + f"_fold{fold_num}"
-        + ".csv",
-        index=None,
-    )
-
-    submission["sign"] = (result > 0.5).astype(int)
-
-    submission.to_csv(
-        os.path.join(config["submission"], config["model"])
-        + f"_fold{fold_num}"
-        + ".csv.gz",
-        compression="gzip",
-        index=None,
-    )
+        scheduler.step(valid_logs[type(loss).__name__])
