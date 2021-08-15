@@ -4,6 +4,7 @@ import sys
 import albumentations as A
 import pandas as pd
 import torch
+import timm
 import wandb
 from sklearn.model_selection import StratifiedKFold
 from torch.utils.data import DataLoader
